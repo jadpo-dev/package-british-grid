@@ -5,7 +5,7 @@ package BritishGrid.v1
     /// Grid references to latitude and longitude: British National Grid eastings and northings to OSGB36, ETRS89 and WGS84, and Irish Grid ones to ETRS89 and WGS84, by ospoint's method (MIT, Ideal Postcodes): good to a few metres, not survey grade.
     file package.jadpo
     kind library
-    version 1.0.1
+    version 1.0.0
     publisher @jadpo
     licence apache_2_0
     jadpo 0.4
