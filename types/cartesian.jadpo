@@ -1,0 +1,6 @@
+/// A point in Earth-centred Cartesian coordinates, in megametres.
+type Cartesian = Object {
+    x: Real
+    y: Real
+    z: Real
+}

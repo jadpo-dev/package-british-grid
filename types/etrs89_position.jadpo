@@ -1,0 +1,8 @@
+/// A latitude and a longitude in decimal degrees on ETRS89, the datum fixed
+/// to Europe that GPS positions in Britain are surveyed in. It drifts from
+/// WGS84 by about 2.5 cm a year, which is why it is kept apart from `Point`.
+decline type.standard_exists: "ETRS89 degrees, fixed to the Eurasian plate, which drift from WGS84 by about 2.5 cm a year"
+public type Etrs89Position = Object {
+    latitude: Latitude
+    longitude: Longitude
+}

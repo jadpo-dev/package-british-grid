@@ -1,0 +1,5 @@
+/// How many more times an iteration may run before it gives up.
+type Steps = Int {
+    min: 0
+    max: 50
+}

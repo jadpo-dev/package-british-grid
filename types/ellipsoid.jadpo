@@ -1,0 +1,5 @@
+/// An ellipsoid by its semi-major and semi-minor axes, in megametres.
+type Ellipsoid = Object {
+    semi_major: PositiveReal
+    semi_minor: PositiveReal
+}

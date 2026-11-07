@@ -1,0 +1,8 @@
+/// A latitude and a longitude in decimal degrees on OSGB36, the datum of
+/// the British National Grid, on the Airy 1830 ellipsoid. OSGB36 lies around
+/// 100 metres from WGS84, so this is never a `Point`.
+decline type.standard_exists: "OSGB36 degrees on the Airy 1830 ellipsoid, not WGS84, so a Point would place it around 100 m out"
+public type Osgb36Position = Object {
+    latitude: Latitude
+    longitude: Longitude
+}

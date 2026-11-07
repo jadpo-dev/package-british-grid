@@ -1,0 +1,12 @@
+/// A seven-parameter Helmert transformation: its translations in
+/// megametres, its rotations in seconds of arc, and its scale in parts per
+/// million.
+type HelmertParameters = Object {
+    tx: Real
+    ty: Real
+    tz: Real
+    rx: Real
+    ry: Real
+    rz: Real
+    s: Real
+}

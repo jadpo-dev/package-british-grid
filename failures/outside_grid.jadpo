@@ -1,0 +1,7 @@
+/// The easting or the northing is outside its grid: below 0, or past
+/// 700,000 east or 1,300,000 north on the British National Grid and
+/// 400,000 east or 500,000 north on the Irish Grid.
+public type OutsideGrid = Failure {
+    kind: FailureKind.invalid_value
+    message: "That easting or northing is outside its grid."
+}

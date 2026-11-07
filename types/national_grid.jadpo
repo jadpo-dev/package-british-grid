@@ -1,0 +1,9 @@
+/// A national grid: its projection, the Helmert transformation from its
+/// datum to ETRS89, and the largest easting and northing it covers, in
+/// metres.
+type NationalGrid = Object {
+    projection: TransverseMercator
+    to_etrs89: HelmertParameters
+    max_easting: Real
+    max_northing: Real
+}

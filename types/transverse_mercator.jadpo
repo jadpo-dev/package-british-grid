@@ -1,0 +1,11 @@
+/// A transverse Mercator projection: its ellipsoid, its scale factor on the
+/// central meridian, its true origin in degrees, and the grid position of
+/// that origin in megametres.
+type TransverseMercator = Object {
+    ellipsoid: Ellipsoid
+    scale_factor: PositiveReal
+    origin_latitude: Real
+    origin_longitude: Real
+    false_easting: Real
+    false_northing: Real
+}

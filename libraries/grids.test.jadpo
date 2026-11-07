@@ -1,0 +1,69 @@
+// Where this package parts from ospoint on purpose.
+
+test "a position off its grid fails rather than giving a far-off answer" {
+    // ospoint's constructor test keeps 12345678 east and north; ospoint then
+    // converts it to a meaningless place. This package refuses it.
+    var far: EastingNorthing = EastingNorthing {
+        easting: 12345678.0
+        northing: 12345678.0
+        crs: "EPSG:27700"
+    }
+    assert convert.to_osgb36(far) fails OutsideGrid
+    assert convert.to_etrs89(far) fails OutsideGrid
+    assert convert.to_wgs84(far) fails OutsideGrid
+    var off_ireland: EastingNorthing = EastingNorthing {
+        easting: 400001.0
+        northing: 374638.0
+        crs: "EPSG:29902"
+    }
+    assert convert.to_wgs84(off_ireland) fails OutsideGrid
+    var south_of_ireland: EastingNorthing = EastingNorthing {
+        easting: 333890.0
+        northing: -0.5
+        crs: "EPSG:29902"
+    }
+    assert convert.to_etrs89(south_of_ireland) fails OutsideGrid
+}
+
+test "the grid's edges are on it" {
+    var corner: EastingNorthing = EastingNorthing {
+        easting: 0.0
+        northing: 0.0
+        crs: "EPSG:27700"
+    }
+    var origin: Point = attempt convert.to_wgs84(corner)
+    assert origin.latitude > 49.0
+    var far_corner: EastingNorthing = EastingNorthing {
+        easting: 700000.0
+        northing: 1300000.0
+        crs: "EPSG:27700"
+    }
+    var north_east: Point = attempt convert.to_wgs84(far_corner)
+    assert north_east.latitude > 60.0
+}
+
+test "fractions of a metre are kept, where ospoint drops them" {
+    // ospoint reads eastings and northings with parseInt, so 651409.903
+    // becomes 651409. Kept whole, Ordnance Survey's worked example lands on
+    // its answer, 52°39′27.2531″ N, 1°43′4.5177″ E.
+    var example: EastingNorthing = EastingNorthing {
+        easting: 651409.903
+        northing: 313177.27
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(example)
+    assert decimal.abs(osgb36.latitude - 52.657570305556) < 0.00000003
+    assert decimal.abs(osgb36.longitude - 1.717921583333) < 0.00000003
+}
+
+test "the true origin is where the projection says" {
+    // 400000 E, -100000 N is 49° N, 2° W; the grid starts at 0 N, so the
+    // nearest point on it is due north.
+    var on_meridian: EastingNorthing = EastingNorthing {
+        easting: 400000.0
+        northing: 0.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(on_meridian)
+    assert osgb36.longitude == -2.0
+}

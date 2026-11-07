@@ -1,0 +1,7 @@
+/// The position's `Crs` isn't a grid the conversion knows: the British
+/// National Grid, `EPSG:27700`, or for ETRS89 and WGS84 also the Irish
+/// Grid, `EPSG:29902`.
+public type UnsupportedGrid = Failure {
+    kind: FailureKind.invalid_value
+    message: "That coordinate reference system isn't one this conversion knows."
+}

@@ -1,0 +1,267 @@
+// ospoint's test vectors, from its tests/data/national_grid.json and
+// tests/data/irish_national_grid.json (MIT, Ideal Postcodes), each at its
+// postcode. ospoint checks them to a relative 10⁻⁵, about 100 metres; these
+// hold them to what the method gives: OSGB36 to 10⁻⁹ degrees, the vectors'
+// own places; ETRS89 and WGS84 on the British grid to 10⁻⁸ degrees, about a
+// millimetre; and on the Irish Grid, through TM65's Helmert, to 3 × 10⁻⁶
+// degrees, about 30 centimetres.
+
+test "NW1 9HZ on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 529404.0
+        northing: 184524.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 51.5442771915) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -0.1336688927) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 51.544783154944) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -0.135276077351) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "PR0 2SP on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 355008.0
+        northing: 429378.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 53.7585958482) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -2.6825100535) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 53.758805090828) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -2.683907021034) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "DN2 5HS on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 459159.0
+        northing: 403295.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 53.5227418024) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -1.1075705475) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 53.523001805421) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -1.109147509169) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "CV10 7HH on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 434739.0
+        northing: 290733.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 52.5130114397) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -1.4880502263) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 52.513383912173) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -1.489540169119) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "EX12 4AB on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 325504.0
+        northing: 89994.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 50.7042316399) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -3.0550762331) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 50.704792591055) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -3.056320818135) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "TN19 7BG on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 568230.0
+        northing: 124997.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 50.9991957299) < 0.000000001
+    assert decimal.abs(osgb36.longitude - 0.3978104386) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 50.999773245709) < 0.00000001
+    assert decimal.abs(etrs89.longitude - 0.396165563528) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "HP7 9TB on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 497980.0
+        northing: 197802.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 51.6699736171) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -0.5829976678) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 51.670457934396) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -0.584558659291) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "WN7 5HT on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 364225.0
+        northing: 401771.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 53.5111549423) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -2.5395242499) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 53.511395303404) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -2.540928765517) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "DY1 3LG on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 393430.0
+        northing: 292062.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 52.5260280345) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -2.0968506023) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 52.526390146896) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -2.098269628082) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "SA5 8HX on the British National Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 263290.0
+        northing: 195174.0
+        crs: "EPSG:27700"
+    }
+    var osgb36: Osgb36Position = attempt convert.to_osgb36(position)
+    assert decimal.abs(osgb36.latitude - 51.6382662551) < 0.000000001
+    assert decimal.abs(osgb36.longitude - -3.9757859793) < 0.000000001
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 51.638707177807) < 0.00000001
+    assert decimal.abs(etrs89.longitude - -3.976954712328) < 0.00000001
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+}
+
+test "BT1 2AG on the Irish Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 333890.0
+        northing: 374638.0
+        crs: "EPSG:29902"
+    }
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 54.60222639) < 0.000003
+    assert decimal.abs(etrs89.longitude - -5.92889303) < 0.000003
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+    assert convert.to_osgb36(position) fails UnsupportedGrid
+}
+
+test "BT2 7AD on the Irish Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 333634.0
+        northing: 373505.0
+        crs: "EPSG:29902"
+    }
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 54.5921228) < 0.000003
+    assert decimal.abs(etrs89.longitude - -5.93336692) < 0.000003
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+    assert convert.to_osgb36(position) fails UnsupportedGrid
+}
+
+test "BT4 1AD on the Irish Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 336520.0
+        northing: 374740.0
+        crs: "EPSG:29902"
+    }
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 54.60243927) < 0.000003
+    assert decimal.abs(etrs89.longitude - -5.88817859) < 0.000003
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+    assert convert.to_osgb36(position) fails UnsupportedGrid
+}
+
+test "BT5 4AF on the Irish Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 335492.0
+        northing: 374027.0
+        crs: "EPSG:29902"
+    }
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 54.59631491) < 0.000003
+    assert decimal.abs(etrs89.longitude - -5.9044033) < 0.000003
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+    assert convert.to_osgb36(position) fails UnsupportedGrid
+}
+
+test "BT62 1AE on the Irish Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 297411.0
+        northing: 356929.0
+        crs: "EPSG:29902"
+    }
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 54.45153752) < 0.000003
+    assert decimal.abs(etrs89.longitude - -6.49897188) < 0.000003
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+    assert convert.to_osgb36(position) fails UnsupportedGrid
+}
+
+test "BT7 1AB on the Irish Grid" {
+    var position: EastingNorthing = EastingNorthing {
+        easting: 333887.0
+        northing: 372959.0
+        crs: "EPSG:29902"
+    }
+    var etrs89: Etrs89Position = attempt convert.to_etrs89(position)
+    assert decimal.abs(etrs89.latitude - 54.58715436) < 0.000003
+    assert decimal.abs(etrs89.longitude - -5.92970442) < 0.000003
+    var wgs84: Point = attempt convert.to_wgs84(position)
+    assert wgs84.latitude == etrs89.latitude
+    assert wgs84.longitude == etrs89.longitude
+    assert convert.to_osgb36(position) fails UnsupportedGrid
+}

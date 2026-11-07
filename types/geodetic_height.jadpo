@@ -1,0 +1,7 @@
+/// A latitude and a longitude in radians, and a height above the
+/// ellipsoid in megametres.
+type GeodeticHeight = Object {
+    north: Real
+    east: Real
+    height: Real
+}

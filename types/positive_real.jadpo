@@ -1,0 +1,4 @@
+/// A `Real` above zero, which a division can take as its divisor.
+type PositiveReal = Real {
+    min: 0.000000000000000001
+}

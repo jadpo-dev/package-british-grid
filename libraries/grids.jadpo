@@ -1,0 +1,56 @@
+/// Choosing the grid a position is on, and turning radians into the
+/// standard `Latitude` and `Longitude`.
+library grids {
+    /// The grid a position's `Crs` names.
+    function grid_of(position: EastingNorthing) fails UnsupportedGrid -> NationalGrid {
+        if (position.crs == "EPSG:27700") {
+            return geodesy.british_national_grid()
+        }
+        if (position.crs == "EPSG:29902") {
+            return geodesy.irish_grid()
+        }
+        reject UnsupportedGrid
+    }
+
+    /// Latitude and longitude in radians on the grid's own datum, once the
+    /// easting and northing are checked to lie on the grid.
+    function on_datum(grid: NationalGrid, position: EastingNorthing) fails OutsideGrid -> Geodetic {
+        if (position.easting < 0.0 or position.easting > grid.max_easting) {
+            reject OutsideGrid
+        }
+        if (position.northing < 0.0 or position.northing > grid.max_northing) {
+            reject OutsideGrid
+        }
+        var easting: Real = Real(position.easting * 0.000001)
+        var northing: Real = Real(position.northing * 0.000001)
+        return attempt geodesy.to_geodetic(grid.projection, easting, northing)
+    }
+
+    /// Latitude, longitude and height in radians and megametres on ETRS89,
+    /// taking the grid's datum at height 0, as ospoint does.
+    function etrs89_of(
+        position: EastingNorthing
+    ) fails UnsupportedGrid, OutsideGrid -> GeodeticHeight {
+        var grid: NationalGrid = attempt grid_of(position)
+        var local: Geodetic = attempt on_datum(grid, position)
+        var cartesian: Cartesian = attempt geodesy.to_cartesian(
+            grid.projection.ellipsoid,
+            local,
+            0.0
+        )
+        var moved: Cartesian = geodesy.helmert(grid.to_etrs89, cartesian)
+        return attempt geodesy.from_cartesian(geodesy.grs80(), moved)
+    }
+
+    function latitude_of(radians: Real) fails OutsideGrid -> Latitude {
+        return attempt Latitude(geodesy.degrees(radians)) {
+            invalid: OutsideGrid
+        }
+    }
+
+    function longitude_of(radians: Real) fails OutsideGrid -> Longitude {
+        return attempt Longitude(geodesy.degrees(radians)) {
+            invalid: OutsideGrid
+        }
+    }
+}

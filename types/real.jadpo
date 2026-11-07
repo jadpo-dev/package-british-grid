@@ -1,0 +1,5 @@
+/// A number in the conversion's working: radians, ratios, or lengths in
+/// megametres, so every product fits Jadpo's 38 digits.
+type Real = Decimal {
+    scale: 18
+}

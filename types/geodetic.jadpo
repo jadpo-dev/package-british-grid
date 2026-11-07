@@ -1,0 +1,6 @@
+/// A latitude and a longitude in radians, on whichever datum the step
+/// works in.
+type Geodetic = Object {
+    north: Real
+    east: Real
+}

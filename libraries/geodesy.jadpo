@@ -1,0 +1,366 @@
+/// The method, after ospoint (MIT, Ideal Postcodes), which follows Ordnance
+/// Survey's "A Guide to Coordinate Systems in Great Britain". Lengths are in
+/// megametres and angles in radians, each a `Real` of 18 places, so every
+/// product of two fits Jadpo's 38 digits.
+library geodesy {
+    /// Airy 1830, the ellipsoid of OSGB36.
+    function airy_1830() -> Ellipsoid {
+        return Ellipsoid {
+            semi_major: 6.377563396
+            semi_minor: 6.356256909
+        }
+    }
+
+    /// Airy 1830 modified, the ellipsoid of the Irish Grid.
+    function airy_1830_modified() -> Ellipsoid {
+        return Ellipsoid {
+            semi_major: 6.377340189
+            semi_minor: 6.356034447
+        }
+    }
+
+    /// GRS80, the ellipsoid of ETRS89.
+    function grs80() -> Ellipsoid {
+        return Ellipsoid {
+            semi_major: 6.378137
+            semi_minor: 6.3567523141
+        }
+    }
+
+    /// The British National Grid, `EPSG:27700`, with OSGB36 to ETRS89.
+    function british_national_grid() -> NationalGrid {
+        return NationalGrid {
+            projection: TransverseMercator {
+                ellipsoid: airy_1830()
+                scale_factor: 0.9996012717
+                origin_latitude: from_dms(49.0, 0.0, 0.0)
+                origin_longitude: from_dms(-2.0, 0.0, 0.0)
+                false_easting: 0.4
+                false_northing: -0.1
+            }
+            to_etrs89: HelmertParameters {
+                tx: 0.000446448
+                ty: -0.000125157
+                tz: 0.00054206
+                rx: 0.1502
+                ry: 0.247
+                rz: 0.8421
+                s: -20.4894
+            }
+            max_easting: 700000.0
+            max_northing: 1300000.0
+        }
+    }
+
+    /// The Irish Grid, `EPSG:29902`, with TM65 to ETRS89.
+    function irish_grid() -> NationalGrid {
+        return NationalGrid {
+            projection: TransverseMercator {
+                ellipsoid: airy_1830_modified()
+                scale_factor: 1.000035
+                origin_latitude: from_dms(53.0, 30.0, 0.0)
+                origin_longitude: from_dms(-8.0, 0.0, 0.0)
+                false_easting: 0.2
+                false_northing: 0.25
+            }
+            to_etrs89: HelmertParameters {
+                tx: 0.00048253
+                ty: -0.000130596
+                tz: 0.000564557
+                rx: -1.042
+                ry: -0.214
+                rz: -0.631
+                s: 8.15
+            }
+            max_easting: 400000.0
+            max_northing: 500000.0
+        }
+    }
+
+    function mul(a: Real, b: Real) -> Real {
+        return Real(a * b)
+    }
+
+    function div(dividend: Real, divisor: PositiveReal) -> Real {
+        return Real(decimal.divide(dividend, divisor, rounding: Rounding.half_even))
+    }
+
+    function positive(value: Real) fails OutsideGrid -> PositiveReal {
+        return attempt PositiveReal(value) {
+            invalid: OutsideGrid
+        }
+    }
+
+    function root(value: PositiveReal) fails OutsideGrid -> PositiveReal {
+        return attempt positive(Real(decimal.sqrt(value, scale: 18, rounding: Rounding.half_even)))
+    }
+
+    function sine(radians: Real) -> Real {
+        return Real(decimal.sin(radians, scale: 18, rounding: Rounding.half_even))
+    }
+
+    function cosine(radians: Real) -> Real {
+        return Real(decimal.cos(radians, scale: 18, rounding: Rounding.half_even))
+    }
+
+    function arctan2(y: Real, x: Real) -> Real {
+        return Real(decimal.atan2(y, x, scale: 18, rounding: Rounding.half_even))
+    }
+
+    function pi() -> PositiveReal {
+        return PositiveReal(decimal.pi(scale: 18, rounding: Rounding.half_even))
+    }
+
+    /// ospoint's `toRadians`: `(degrees / 180) * π`.
+    function radians(degrees: Real) -> Real {
+        return mul(div(degrees, 180.0), pi())
+    }
+
+    /// ospoint's `toDegrees`: `(radians / π) * 180`.
+    function degrees(radians: Real) -> Real {
+        return Real(div(radians, pi()) * 180)
+    }
+
+    /// ospoint's `toDecimalFromDMS`.
+    function from_dms(whole: Real, minutes: Real, seconds: Real) -> Real {
+        return Real(whole + div(minutes, 60.0) + div(seconds, 3600.0))
+    }
+
+    /// The first eccentricity squared, `(a² - b²) / a²`, worked out as
+    /// `1 - (b / a)²`.
+    function e2(ellipsoid: Ellipsoid) -> Real {
+        var ratio: Real = div(ellipsoid.semi_minor, ellipsoid.semi_major)
+        return Real(1.0 - mul(ratio, ratio))
+    }
+
+    /// `1 - e² sin² φ`, which every radius of curvature divides by.
+    function curvature_term(
+        ellipsoid: Ellipsoid,
+        latitude: Real
+    ) fails OutsideGrid -> PositiveReal {
+        var s: Real = sine(latitude)
+        return attempt positive(Real(1.0 - mul(e2(ellipsoid), mul(s, s))))
+    }
+
+    /// ν, the radius of curvature at `latitude` across the meridian, scaled
+    /// by `scale_factor`: `a F₀ (1 - e² sin² φ)^-½`.
+    function nu(
+        ellipsoid: Ellipsoid,
+        scale_factor: PositiveReal,
+        latitude: Real
+    ) fails OutsideGrid -> Real {
+        var term: PositiveReal = attempt curvature_term(ellipsoid, latitude)
+        var term_root: PositiveReal = attempt root(term)
+        return div(mul(ellipsoid.semi_major, scale_factor), term_root)
+    }
+
+    /// ρ, the radius of curvature along the meridian, scaled by
+    /// `scale_factor`: `a F₀ (1 - e²) (1 - e² sin² φ)^-1.5`.
+    function rho(
+        ellipsoid: Ellipsoid,
+        scale_factor: PositiveReal,
+        latitude: Real
+    ) fails OutsideGrid -> Real {
+        var term: PositiveReal = attempt curvature_term(ellipsoid, latitude)
+        var term_root: PositiveReal = attempt root(term)
+        var cubed: PositiveReal = attempt positive(mul(term, term_root))
+        var top: Real = mul(mul(ellipsoid.semi_major, scale_factor), Real(1.0 - e2(ellipsoid)))
+        return div(top, cubed)
+    }
+
+    /// η², `ν / ρ - 1`.
+    function eta2(nu: Real, rho: Real) fails OutsideGrid -> Real {
+        var divisor: PositiveReal = attempt positive(rho)
+        return Real(div(nu, divisor) - 1.0)
+    }
+
+    /// M, the meridional arc from `origin` to `latitude`, Ordnance Survey's
+    /// equation C3.
+    function meridional_arc(
+        ellipsoid: Ellipsoid,
+        scale_factor: PositiveReal,
+        latitude: Real,
+        origin: Real
+    ) fails OutsideGrid -> Real {
+        var a: Real = ellipsoid.semi_major
+        var b: Real = ellipsoid.semi_minor
+        var sum: PositiveReal = attempt positive(Real(a + b))
+        var n: Real = div(Real(a - b), sum)
+        var n2: Real = mul(n, n)
+        var n3: Real = mul(n2, n)
+        var less: Real = Real(latitude - origin)
+        var more: Real = Real(latitude + origin)
+        var w: Real = mul(Real(1.0 + n + 1.25 * n2 + 1.25 * n3), less)
+        var x: Real = mul(mul(Real(3 * n + 3 * n2 + 2.625 * n3), sine(less)), cosine(more))
+        var y: Real = mul(
+            mul(Real(1.875 * n2 + 1.875 * n3), sine(Real(2 * less))),
+            cosine(Real(2 * more))
+        )
+        var z: Real = mul(
+            mul(div(Real(35 * n3), 24.0), sine(Real(3 * less))),
+            cosine(Real(3 * more))
+        )
+        return mul(mul(b, scale_factor), Real(w - x + y - z))
+    }
+
+    /// φ′, the latitude whose meridional arc reaches `northing`, Ordnance
+    /// Survey's equations C6 and C7. As ospoint does, it stops once what is
+    /// left falls below 0.1 mm.
+    function footpoint(
+        projection: TransverseMercator,
+        northing: Real,
+        latitude: Real,
+        steps: Steps
+    ) fails OutsideGrid -> Real {
+        var origin: Real = radians(projection.origin_latitude)
+        var arc: Real = attempt meridional_arc(
+            projection.ellipsoid,
+            projection.scale_factor,
+            latitude,
+            origin
+        )
+        var left: Real = Real(northing - projection.false_northing - arc)
+        if (left < 0.0000000001) {
+            return latitude
+        }
+        if (steps == 0) {
+            reject OutsideGrid
+        }
+        var scaled: PositiveReal = attempt positive(
+            mul(projection.ellipsoid.semi_major, projection.scale_factor)
+        )
+        return attempt footpoint(
+            projection,
+            northing,
+            Real(div(left, scaled) + latitude),
+            Steps(steps - 1)
+        )
+    }
+
+    /// The latitude and longitude, in radians on the projection's own
+    /// datum, of a grid position in megametres: Ordnance Survey's equations
+    /// C6 to C11, ospoint's `mercatorToLatLon`.
+    function to_geodetic(
+        projection: TransverseMercator,
+        easting: Real,
+        northing: Real
+    ) fails OutsideGrid -> Geodetic {
+        var ellipsoid: Ellipsoid = projection.ellipsoid
+        var f0: PositiveReal = projection.scale_factor
+        var scaled: PositiveReal = attempt positive(mul(ellipsoid.semi_major, f0))
+        var origin: Real = radians(projection.origin_latitude)
+        var first: Real = Real(div(Real(northing - projection.false_northing), scaled) + origin)
+        var lat: Real = attempt footpoint(projection, northing, first, 20)
+        var nu_here: Real = attempt nu(ellipsoid, f0, lat)
+        var rho_here: Real = attempt rho(ellipsoid, f0, lat)
+        var eta: Real = attempt eta2(nu_here, rho_here)
+        var c: PositiveReal = attempt positive(cosine(lat))
+        var t: Real = div(sine(lat), c)
+        var sec: Real = div(1.0, c)
+        var t2: Real = mul(t, t)
+        var t4: Real = mul(t2, t2)
+        var t6: Real = mul(t4, t2)
+        var nu_divisor: PositiveReal = attempt positive(nu_here)
+        var rho_divisor: PositiveReal = attempt positive(rho_here)
+        var q: Real = div(nu_here, rho_divisor)
+        // r is (E - E₀) / ν, so VII E² is t q r² / 2 and X E is sec r: the
+        // same terms as Ordnance Survey's VII to XIII, with no power of ν
+        // past 38 digits.
+        var r: Real = div(Real(easting - projection.false_easting), nu_divisor)
+        var r2: Real = mul(r, r)
+        var r3: Real = mul(r2, r)
+        var r4: Real = mul(r2, r2)
+        var r5: Real = mul(r4, r)
+        var r6: Real = mul(r4, r2)
+        var r7: Real = mul(r6, r)
+        var tq: Real = mul(t, q)
+        var vii: Real = div(mul(tq, r2), 2.0)
+        var viii: Real = div(mul(mul(tq, r4), Real(5.0 + 3 * t2 + eta - 9 * mul(t2, eta))), 24.0)
+        var ix: Real = div(mul(mul(tq, r6), Real(61.0 + 90 * t2 + 45 * t4)), 720.0)
+        var x: Real = mul(sec, r)
+        var xi: Real = div(mul(mul(sec, r3), Real(q + 2 * t2)), 6.0)
+        var xii: Real = div(mul(mul(sec, r5), Real(5.0 + 28 * t2 + 24 * t4)), 120.0)
+        var xiii: Real = div(
+            mul(mul(sec, r7), Real(61.0 + 662 * t2 + 1320 * t4 + 720 * t6)),
+            5040.0
+        )
+        return Geodetic {
+            north: Real(lat - vii + viii - ix)
+            east: Real(radians(projection.origin_longitude) + x - xi + xii - xiii)
+        }
+    }
+
+    /// Earth-centred Cartesian coordinates of a latitude and longitude in
+    /// radians at `height` megametres above `ellipsoid`, ospoint's
+    /// `toCartesian`.
+    function to_cartesian(
+        ellipsoid: Ellipsoid,
+        position: Geodetic,
+        height: Real
+    ) fails OutsideGrid -> Cartesian {
+        var term: PositiveReal = attempt curvature_term(ellipsoid, position.north)
+        var term_root: PositiveReal = attempt root(term)
+        var v: Real = div(ellipsoid.semi_major, term_root)
+        var across: Real = mul(Real(v + height), cosine(position.north))
+        return Cartesian {
+            x: mul(across, cosine(position.east))
+            y: mul(across, sine(position.east))
+            z: mul(Real(mul(Real(1.0 - e2(ellipsoid)), v) + height), sine(position.north))
+        }
+    }
+
+    /// The seven-parameter Helmert transformation, small-angle form, as
+    /// Ordnance Survey's guide gives it.
+    function helmert(transform: HelmertParameters, point: Cartesian) -> Cartesian {
+        var rx: Real = radians(div(transform.rx, 3600.0))
+        var ry: Real = radians(div(transform.ry, 3600.0))
+        var rz: Real = radians(div(transform.rz, 3600.0))
+        var stretch: Real = Real(1.0 + transform.s * 0.000001)
+        return Cartesian {
+            x: Real(transform.tx + mul(stretch, point.x) - mul(rz, point.y) + mul(ry, point.z))
+            y: Real(transform.ty + mul(rz, point.x) + mul(stretch, point.y) - mul(rx, point.z))
+            z: Real(transform.tz - mul(ry, point.x) + mul(rx, point.y) + mul(stretch, point.z))
+        }
+    }
+
+    /// Latitude, longitude and height on `ellipsoid` of Cartesian
+    /// coordinates, ospoint's `toLatLon`: it iterates until the latitude
+    /// moves by no more than 10⁻¹⁰ radians.
+    function from_cartesian(
+        ellipsoid: Ellipsoid,
+        point: Cartesian
+    ) fails OutsideGrid -> GeodeticHeight {
+        var squares: PositiveReal = attempt positive(
+            Real(mul(point.x, point.x) + mul(point.y, point.y))
+        )
+        var p: PositiveReal = attempt root(squares)
+        var first: Real = arctan2(point.z, mul(p, Real(1.0 - e2(ellipsoid))))
+        return attempt refine(ellipsoid, point, p, arctan2(point.y, point.x), first, 20)
+    }
+
+    function refine(
+        ellipsoid: Ellipsoid,
+        point: Cartesian,
+        p: PositiveReal,
+        longitude: Real,
+        latitude: Real,
+        steps: Steps
+    ) fails OutsideGrid -> GeodeticHeight {
+        var term: PositiveReal = attempt curvature_term(ellipsoid, latitude)
+        var term_root: PositiveReal = attempt root(term)
+        var v: Real = div(ellipsoid.semi_major, term_root)
+        var next: Real = arctan2(Real(point.z + mul(mul(e2(ellipsoid), v), sine(latitude))), p)
+        if (decimal.abs(next - latitude) <= 0.0000000001) {
+            var c: PositiveReal = attempt positive(cosine(next))
+            return GeodeticHeight {
+                north: next
+                east: longitude
+                height: Real(div(p, c) - v)
+            }
+        }
+        if (steps == 0) {
+            reject OutsideGrid
+        }
+        return attempt refine(ellipsoid, point, p, longitude, next, Steps(steps - 1))
+    }
+}

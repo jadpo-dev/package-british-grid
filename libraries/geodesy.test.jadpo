@@ -1,0 +1,85 @@
+// ospoint's unit tests (tests/unit.js, MIT, Ideal Postcodes), on Ordnance
+// Survey's worked example: the point at 52°39′27.2531″ N, 1°43′4.5177″ E,
+// grid position 651409.903 E, 313177.270 N. Lengths here are in megametres,
+// as the method works in them, so ospoint's 6388502.3333 m is 6.3885023333.
+// Ordnance Survey prints ν and ρ to 0.1 mm and M to 0.01 mm, so they are
+// held to a millimetre and a tenth of one, and η², worked out from those
+// rounded figures, to 10⁻⁹.
+
+test "degrees, minutes and seconds become decimal degrees" {
+    assert geodesy.from_dms(0.0, 0.0, 0.0) == 0.0
+    assert geodesy.from_dms(30.0, 0.0, 0.0) == 30.0
+    assert decimal.abs(geodesy.from_dms(15.0, 0.0, 3.0) - 15.00083333333333) < 0.00000000000001
+}
+
+test "degrees become radians" {
+    assert geodesy.radians(180.0) == geodesy.pi()
+    assert geodesy.radians(0.0) == 0.0
+    assert decimal.abs(geodesy.radians(90.0) - 1.570796326794896619) < 0.000000000000000002
+}
+
+test "radians become degrees" {
+    assert geodesy.degrees(geodesy.pi()) == 180.0
+    assert geodesy.degrees(0.0) == 0.0
+    assert decimal.abs(geodesy.degrees(1.570796326794896619) - 90.0) < 0.000000000000001
+}
+
+test "nu, rho and eta squared at the worked example" {
+    var latitude: Real = geodesy.radians(geodesy.from_dms(52.0, 39.0, 27.2531))
+    var nu: Real = attempt geodesy.nu(geodesy.airy_1830(), 0.9996012717, latitude)
+    assert decimal.abs(nu - 6.3885023333) < 0.000000001
+    var rho: Real = attempt geodesy.rho(geodesy.airy_1830(), 0.9996012717, latitude)
+    assert decimal.abs(rho - 6.3727564399) < 0.000000001
+    var eta2: Real = attempt geodesy.eta2(nu, rho)
+    assert decimal.abs(eta2 - 0.0024708136169) < 0.000000001
+}
+
+test "the meridional arc at the worked example" {
+    var latitude: Real = geodesy.radians(geodesy.from_dms(52.0, 39.0, 27.2531))
+    var origin: Real = geodesy.radians(geodesy.from_dms(49.0, 0.0, 0.0))
+    var arc: Real = attempt geodesy.meridional_arc(
+        geodesy.airy_1830(),
+        0.9996012717,
+        latitude,
+        origin
+    )
+    assert decimal.abs(arc - 0.40668829596) < 0.0000000001
+}
+
+test "the worked example's grid position becomes its latitude and longitude" {
+    var projection: TransverseMercator = geodesy.british_national_grid().projection
+    var position: Geodetic = attempt geodesy.to_geodetic(projection, 0.651409903, 0.31317727)
+    assert decimal.abs(
+        geodesy.degrees(position.north) - geodesy.from_dms(52.0, 39.0, 27.2531)
+    ) < 0.00000003
+    assert decimal.abs(
+        geodesy.degrees(position.east) - geodesy.from_dms(1.0, 43.0, 4.5177)
+    ) < 0.00000003
+}
+
+test "latitude, longitude and height become Cartesian coordinates" {
+    var position: Geodetic = Geodetic {
+        north: geodesy.radians(geodesy.from_dms(52.0, 39.0, 27.2531))
+        east: geodesy.radians(geodesy.from_dms(1.0, 43.0, 4.5177))
+    }
+    var point: Cartesian = attempt geodesy.to_cartesian(geodesy.airy_1830(), position, 0.0000247)
+    assert decimal.abs(point.x - 3.874938849) < 0.000000001
+    assert decimal.abs(point.y - 0.116218624) < 0.000000001
+    assert decimal.abs(point.z - 5.047168208) < 0.000000001
+}
+
+test "Cartesian coordinates become latitude, longitude and height" {
+    var point: Cartesian = Cartesian {
+        x: 3.874938849
+        y: 0.116218624
+        z: 5.047168208
+    }
+    var position: GeodeticHeight = attempt geodesy.from_cartesian(geodesy.airy_1830(), point)
+    assert decimal.abs(
+        geodesy.degrees(position.north) - geodesy.from_dms(52.0, 39.0, 27.2531)
+    ) < 0.00000003
+    assert decimal.abs(
+        geodesy.degrees(position.east) - geodesy.from_dms(1.0, 43.0, 4.5177)
+    ) < 0.00000003
+    assert decimal.abs(position.height - 0.0000247) < 0.000000001
+}

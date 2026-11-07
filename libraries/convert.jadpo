@@ -1,0 +1,123 @@
+/// Converts Ordnance Survey grid references to latitude and longitude, by
+/// the method of ospoint (MIT, Ideal Postcodes): Ordnance Survey's
+/// transverse Mercator equations, then a seven-parameter Helmert
+/// transformation to ETRS89. The projection is good to well under a
+/// millimetre; the Helmert step is good to a few metres across Great
+/// Britain, not survey grade, which needs Ordnance Survey's OSTN15 grid.
+public library convert {
+    /// A British National Grid position as latitude and longitude on OSGB36,
+    /// the grid's own datum: Ordnance Survey's projection equations alone,
+    /// with no change of datum, so good to well under a millimetre.
+    ///
+    /// ```jadpo
+    /// var osgb36: Osgb36Position = attempt convert.to_osgb36(EastingNorthing {
+    ///     easting: 529404.0
+    ///     northing: 184524.0
+    ///     crs: "EPSG:27700"
+    /// })
+    /// assert decimal.abs(osgb36.latitude - 51.5442771915) < 0.000000001
+    /// assert decimal.abs(osgb36.longitude - -0.1336688927) < 0.000000001
+    /// var elsewhere: EastingNorthing = EastingNorthing {
+    ///     easting: 333890.0
+    ///     northing: 374638.0
+    ///     crs: "EPSG:29902"
+    /// }
+    /// assert convert.to_osgb36(elsewhere) fails UnsupportedGrid
+    /// var outside: EastingNorthing = EastingNorthing {
+    ///     easting: 800000.0
+    ///     northing: 184524.0
+    ///     crs: "EPSG:27700"
+    /// }
+    /// assert convert.to_osgb36(outside) fails OutsideGrid
+    /// ```
+    function to_osgb36(
+        position: EastingNorthing
+    ) fails UnsupportedGrid, OutsideGrid -> Osgb36Position {
+        if (position.crs != "EPSG:27700") {
+            reject UnsupportedGrid
+        }
+        var grid: NationalGrid = geodesy.british_national_grid()
+        var local: Geodetic = attempt grids.on_datum(grid, position)
+        var latitude: Latitude = attempt grids.latitude_of(local.north)
+        var longitude: Longitude = attempt grids.longitude_of(local.east)
+        return Osgb36Position {
+            latitude: latitude
+            longitude: longitude
+        }
+    }
+
+    /// A British National Grid or Irish Grid position as latitude and
+    /// longitude on ETRS89, through ospoint's Helmert transformation:
+    /// typically within a few metres, not survey grade.
+    ///
+    /// ```jadpo
+    /// var etrs89: Etrs89Position = attempt convert.to_etrs89(EastingNorthing {
+    ///     easting: 529404.0
+    ///     northing: 184524.0
+    ///     crs: "EPSG:27700"
+    /// })
+    /// assert decimal.abs(etrs89.latitude - 51.544783154944) < 0.00000001
+    /// assert decimal.abs(etrs89.longitude - -0.135276077351) < 0.00000001
+    /// var elsewhere: EastingNorthing = EastingNorthing {
+    ///     easting: 529404.0
+    ///     northing: 184524.0
+    ///     crs: "EPSG:4326"
+    /// }
+    /// assert convert.to_etrs89(elsewhere) fails UnsupportedGrid
+    /// var outside: EastingNorthing = EastingNorthing {
+    ///     easting: -1.0
+    ///     northing: 184524.0
+    ///     crs: "EPSG:27700"
+    /// }
+    /// assert convert.to_etrs89(outside) fails OutsideGrid
+    /// ```
+    function to_etrs89(
+        position: EastingNorthing
+    ) fails UnsupportedGrid, OutsideGrid -> Etrs89Position {
+        var geodetic: GeodeticHeight = attempt grids.etrs89_of(position)
+        var latitude: Latitude = attempt grids.latitude_of(geodetic.north)
+        var longitude: Longitude = attempt grids.longitude_of(geodetic.east)
+        return Etrs89Position {
+            latitude: latitude
+            longitude: longitude
+        }
+    }
+
+    /// A British National Grid or Irish Grid position as a WGS84 `Point`.
+    /// As ospoint does, it gives the ETRS89 coordinates: the two datums
+    /// drift apart by about 2.5 cm a year, which is below this method's
+    /// accuracy.
+    ///
+    /// ```jadpo
+    /// var point: Point = attempt convert.to_wgs84(EastingNorthing {
+    ///     easting: 529404.0
+    ///     northing: 184524.0
+    ///     crs: "EPSG:27700"
+    /// })
+    /// assert decimal.abs(point.latitude - 51.544783154944) < 0.00000001
+    /// assert decimal.abs(point.longitude - -0.135276077351) < 0.00000001
+    /// assert point.altitude == none
+    /// var elsewhere: EastingNorthing = EastingNorthing {
+    ///     easting: 529404.0
+    ///     northing: 184524.0
+    ///     crs: "EPSG:3857"
+    /// }
+    /// assert convert.to_wgs84(elsewhere) fails UnsupportedGrid
+    /// var outside: EastingNorthing = EastingNorthing {
+    ///     easting: 529404.0
+    ///     northing: 1300001.0
+    ///     crs: "EPSG:27700"
+    /// }
+    /// assert convert.to_wgs84(outside) fails OutsideGrid
+    /// ```
+    function to_wgs84(position: EastingNorthing) fails UnsupportedGrid, OutsideGrid -> Point {
+        var geodetic: GeodeticHeight = attempt grids.etrs89_of(position)
+        var latitude: Latitude = attempt grids.latitude_of(geodetic.north)
+        var longitude: Longitude = attempt grids.longitude_of(geodetic.east)
+        return Point {
+            latitude: latitude
+            longitude: longitude
+            altitude: none
+        }
+    }
+}
